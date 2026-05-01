@@ -37,11 +37,16 @@ final class SocketWriter {
         guard fd >= 0,
               let data = try? JSONSerialization.data(withJSONObject: payload.toDict()),
               let json = String(data: data, encoding: .utf8) else { return }
-        let line = json + "\n"
-        let n = line.withCString { Darwin.write(fd, $0, strlen($0)) }
-        if n < 0 {
-            log.error("Socket write failed — will reconnect on next send")
-            Darwin.close(fd); fd = -1
+        let bytes = Array((json + "\n").utf8)
+        var sent  = 0
+        while sent < bytes.count {
+            let n = Darwin.write(fd, bytes.withUnsafeBytes { $0.baseAddress! + sent }, bytes.count - sent)
+            if n < 0 {
+                log.error("Socket write failed after \(sent)/\(bytes.count) bytes — will reconnect")
+                Darwin.close(fd); fd = -1
+                return
+            }
+            sent += n
         }
     }
 

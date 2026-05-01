@@ -11,6 +11,11 @@ protocol AppCaptureStrategy {
     /// Non-nil enables periodic polling (seconds). Needed for Electron apps where
     /// AX change events are unreliable.
     var pollInterval: TimeInterval? { get }
+    /// Seconds to wait after setup() before the first capture fires.
+    /// Electron apps need this — AXEnhancedUserInterface triggers an async AX tree
+    /// rebuild in the target process and capture() will see an empty tree if it
+    /// runs before that rebuild completes.
+    var setupDelay: TimeInterval { get }
     /// Called once on app activation — configure AXEnhancedUserInterface, timeouts, etc.
     func setup(_ axApp: AXUIElement)
     /// Extract text (and optional URL) from the focused window.
@@ -23,6 +28,7 @@ extension AppCaptureStrategy {
         [kAXFocusedWindowChangedNotification, kAXTitleChangedNotification]
     }
     var pollInterval: TimeInterval? { nil }
+    var setupDelay: TimeInterval { 0 }
     func setup(_ axApp: AXUIElement) {
         AXUIElementSetMessagingTimeout(axApp, axTimeout)
     }

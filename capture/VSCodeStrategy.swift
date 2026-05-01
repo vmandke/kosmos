@@ -7,6 +7,7 @@ struct VSCodeStrategy: AppCaptureStrategy {
         "com.microsoft.VSCodeInsiders"
     ]
     let pollInterval: TimeInterval? = 20
+    let setupDelay:   TimeInterval  = 0.6
 
     func setup(_ axApp: AXUIElement) {
         AXUIElementSetMessagingTimeout(axApp, axTimeout)

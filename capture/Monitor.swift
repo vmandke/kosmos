@@ -66,7 +66,15 @@ final class KosmosMonitor {
         strategy.setup(axApp)
 
         setupObserver(for: app, strategy: strategy)
-        capture(app)
+        if strategy.setupDelay > 0 {
+            // Wait for the target process to rebuild its AX tree after setup().
+            DispatchQueue.main.asyncAfter(deadline: .now() + strategy.setupDelay) { [weak self] in
+                guard NSWorkspace.shared.frontmostApplication?.bundleIdentifier == bundle else { return }
+                self?.capture(app)
+            }
+        } else {
+            capture(app)
+        }
         if let iv = strategy.pollInterval { startPoll(for: app, interval: iv) } else { stopPoll() }
     }
 
@@ -116,7 +124,7 @@ final class KosmosMonitor {
         log.info("Emit: \(payload.appName) — \"\(title)\" — \(content.count) chars")
         print("\n[\(ts)] \(payload.appName) — \"\(title)\" (\(content.count) chars)")
         if let u = url { print("  URL: \(u)") }
-        print(String(content.prefix(400)))
+        print(content)
         print(String(repeating: "─", count: 44))
 
         socket.send(payload)
