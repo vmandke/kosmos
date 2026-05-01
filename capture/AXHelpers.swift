@@ -28,6 +28,36 @@ func axFocusedWindow(_ axApp: AXUIElement) -> AXUIElement? {
     return (raw as! AXUIElement)
 }
 
+/// Returns the focused UI element within an application (e.g. the active editor field).
+func axFocusedElement(_ axApp: AXUIElement) -> AXUIElement? {
+    var v: AnyObject?
+    guard AXUIElementCopyAttributeValue(axApp, kAXFocusedUIElementAttribute as CFString, &v) == .success,
+          let raw = v else { return nil }
+    return (raw as! AXUIElement)
+}
+
+/// Returns the parent element, used to walk up the AX tree.
+func axParent(_ el: AXUIElement) -> AXUIElement? {
+    var v: AnyObject?
+    guard AXUIElementCopyAttributeValue(el, kAXParentAttribute as CFString, &v) == .success,
+          let raw = v else { return nil }
+    return (raw as! AXUIElement)
+}
+
+/// Prints the AX subtree to stdout for diagnostics (visible in the `make capture` terminal).
+/// os.log redacts dynamic values as <private>, so print is used here intentionally.
+func axDump(_ el: AXUIElement, maxDepth: Int = 5, depth: Int = 0) {
+    guard depth < maxDepth else { return }
+    let role  = axStr(el, kAXRoleAttribute)        ?? "?"
+    let sub   = axStr(el, kAXSubroleAttribute).map { " [\($0)]" }              ?? ""
+    let title = axStr(el, kAXTitleAttribute).map   { " title=\"\($0.prefix(60))\"" } ?? ""
+    let desc  = axStr(el, kAXDescriptionAttribute).map { " desc=\"\($0.prefix(60))\"" } ?? ""
+    let chars = axStr(el, kAXValueAttribute).map   { " [\($0.count)c]" }       ?? ""
+    let pad   = String(repeating: "  ", count: depth)
+    print("AX: \(pad)\(role)\(sub)\(title)\(desc)\(chars)")
+    axChildren(el).forEach { axDump($0, maxDepth: maxDepth, depth: depth + 1) }
+}
+
 // MARK: - Text extractors
 
 /// Collects text from a web content subtree.
