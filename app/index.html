@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kosmos</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #111;
+      color: #ddd;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 13px;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: #0d0d0d;
+      border-bottom: 1px solid #222;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 { font-size: 14px; font-weight: 700; color: #fff; letter-spacing: 0.05em; }
+    #status   { font-size: 11px; color: #555; }
+
+    #feed { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+
+    .card {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 6px;
+      padding: 10px 12px;
+    }
+
+    .meta {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 6px;
+      overflow: hidden;
+    }
+
+    .app-name  { color: #7aa2f7; font-weight: 700; font-size: 12px; white-space: nowrap; }
+    .win-title { color: #888; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .ts        { color: #444; font-size: 11px; white-space: nowrap; }
+
+    .body {
+      color: #bbb;
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.55;
+      font-size: 12px;
+      max-height: 140px;
+      overflow: hidden;
+    }
+    .body.open { max-height: none; }
+
+    .toggle {
+      display: inline-block;
+      margin-top: 5px;
+      background: none;
+      border: none;
+      color: #555;
+      font-size: 11px;
+      cursor: pointer;
+      padding: 0;
+    }
+    .toggle:hover { color: #999; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Kosmos</h1>
+    <span id="status">waiting…</span>
+  </header>
+  <div id="feed"></div>
+
+  <script type="module">
+    import { listen } from '@tauri-apps/api/event'
+
+    const feed   = document.getElementById('feed')
+    const status = document.getElementById('status')
+    let count = 0
+
+    function esc(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    }
+
+    await listen('capture', ({ payload: c }) => {
+      count++
+      status.textContent = `${count} capture${count !== 1 ? 's' : ''}`
+
+      const id = `c${count}`
+      const preview = c.content.slice(0, 400)
+      const hasMore = c.content.length > 400
+      const time = new Date(c.ts).toLocaleTimeString()
+
+      const card = document.createElement('div')
+      card.className = 'card'
+      card.innerHTML = `
+        <div class="meta">
+          <span class="app-name">${esc(c.app)}</span>
+          <span class="win-title">${esc(c.title)}</span>
+          <span class="ts">${time}</span>
+        </div>
+        <div class="body" id="${id}">${esc(preview)}${hasMore ? '…' : ''}</div>
+        ${hasMore ? `<button class="toggle" data-id="${id}" data-full="${esc(c.content)}" data-open="0">show more</button>` : ''}
+      `
+
+      feed.prepend(card)
+    })
+
+    document.addEventListener('click', e => {
+      const btn = e.target.closest('.toggle')
+      if (!btn) return
+      const el   = document.getElementById(btn.dataset.id)
+      const open = btn.dataset.open === '1'
+      if (open) {
+        el.textContent = btn.dataset.full.slice(0, 400) + '…'
+        el.classList.remove('open')
+        btn.textContent  = 'show more'
+        btn.dataset.open = '0'
+      } else {
+        el.textContent   = btn.dataset.full
+        el.classList.add('open')
+        btn.textContent  = 'show less'
+        btn.dataset.open = '1'
+      }
+    })
+  </script>
+</body>
+</html>

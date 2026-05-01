@@ -1,0 +1,23 @@
+# Rust / Cargo
+target/
+
+# Swift
+capture/kosmos-capture
+
+# Node / Tauri
+app/node_modules/
+app/dist/
+app/src-tauri/target/
+app/src-tauri/gen/
+app/src-tauri/binaries/
+
+# Research / personal docs; Papers to read; AI summaries of the papers.
+# Will post entire reference once the project is a bit stable
+research-docs/
+
+# macOS
+.DS_Store
+
+# Editor / tooling
+.claude/
+.vscode/
