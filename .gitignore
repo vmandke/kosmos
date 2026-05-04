@@ -3,6 +3,7 @@ target/
 
 # Swift
 capture/kosmos-capture
+capture/SublimePluginSource.swift
 
 # Node / Tauri
 app/node_modules/

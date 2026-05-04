@@ -4,7 +4,9 @@ SHELL := /bin/bash
 # ── Paths ──────────────────────────────────────────────────────────────────────
 CAPTURE_DIR  := capture
 VIEWER_DIR   := app
-CAPTURE_SRCS := $(wildcard $(CAPTURE_DIR)/*.swift)
+PLUGIN_PY    := $(CAPTURE_DIR)/KosmosCapture.py
+PLUGIN_SWIFT := $(CAPTURE_DIR)/SublimePluginSource.swift
+CAPTURE_SRCS := $(wildcard $(CAPTURE_DIR)/*.swift) $(PLUGIN_SWIFT)
 CAPTURE_BIN  := $(CAPTURE_DIR)/kosmos-capture
 SOCKET       := /tmp/kosmos.sock
 DMG_DIR      := target/release/bundle/dmg
@@ -94,7 +96,7 @@ install:
 ## clean          Remove compiled binaries, socket, sidecar copy, Tauri build output
 clean:
 	@printf "$(C)→$(R) Cleaning...\n"
-	@rm -f $(CAPTURE_BIN) $(SOCKET)
+	@rm -f $(CAPTURE_BIN) $(PLUGIN_SWIFT) $(SOCKET)
 	@rm -rf $(SIDECAR_DIR)
 	@cd $(VIEWER_DIR) && rm -rf dist
 	@cargo clean --quiet
@@ -108,6 +110,10 @@ clean-all: clean
 
 ## build-capture  Compile Swift binary and copy as Tauri sidecar
 build-capture: $(CAPTURE_BIN) $(SIDECAR_BIN)
+
+$(PLUGIN_SWIFT): $(PLUGIN_PY)
+	@{ printf '// Auto-generated from KosmosCapture.py — do not edit directly.\n'; printf 'let sublimePluginSource = """\n'; cat $<; printf '\n"""\n'; } > $@
+	@printf "$(G)✓$(R) Generated $@\n"
 
 $(CAPTURE_BIN): $(CAPTURE_SRCS)
 	@printf "$(C)→$(R) Compiling Swift capture ($(SWIFT_TARGET))...\n"
