@@ -15,37 +15,42 @@ struct VSCodeStrategy: AppCaptureStrategy {
     }
 
     func extract(from window: AXUIElement, app: NSRunningApplication) -> (content: String, url: String?)? {
+        nil  // extractAll() handles VSCode
+    }
+
+    func extractAll(from window: AXUIElement, app: NSRunningApplication) -> [(content: String, url: String?)] {
         guard let webArea = findRootWebArea(window, depth: 0) else {
             log.debug("VSCode: no web area found")
-            axDump(window, maxDepth: 5)
-            return nil
+            return []
         }
 
         var panels: [(label: String, text: String)] = []
         findLandmarks(webArea, into: &panels, depth: 0)
-        log.debug("VSCode: \(panels.count) landmark(s) found")
 
-        if panels.isEmpty {
-            // No landmarks detected — dump the tree so we can see the actual structure.
-            print("[kosmos] VSCode: no landmarks found, dumping web area:")
-            axDump(webArea, maxDepth: 6)
-            // Fall back to the whole blob.
+        let filtered = panels.filter { !isExcluded($0.label) }
+        log.debug("VSCode: \(filtered.count) panel(s) after filter")
+
+        if filtered.isEmpty {
             let text = extractLeafText(webArea)
                 .map    { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                 .filter { $0.count > 2 }
                 .joined(separator: "\n")
-            return text.isEmpty ? nil : (text, nil)
+            return text.isEmpty ? [] : [(content: text, url: nil)]
         }
 
-        let content = panels
-            .map { "## \($0.label)\n\($0.text)" }
-            .joined(separator: "\n\n")
-
-        log.debug("VSCode: \(content.count) chars across \(panels.count) panel(s)")
-        return (content, nil)
+        return filtered.map { panel in
+            log.debug("VSCode panel: \"\(panel.label)\" — \(panel.text.count) chars")
+            return (content: "## \(panel.label)\n\(panel.text)", url: nil)
+        }
     }
 
-    // MARK: - Root web area
+    // MARK: - Helpers
+
+    private static let excludedPanels: [String] = ["Explorer", "Terminal"]
+
+    private func isExcluded(_ label: String) -> Bool {
+        Self.excludedPanels.contains { label.localizedCaseInsensitiveContains($0) }
+    }
 
     private func findRootWebArea(_ el: AXUIElement, depth: Int) -> AXUIElement? {
         guard depth < 10 else { return nil }
@@ -56,37 +61,24 @@ struct VSCodeStrategy: AppCaptureStrategy {
         return nil
     }
 
-    // MARK: - Dynamic landmark detection
-
-    /// Walks the AX subtree and collects every element whose subrole starts with
-    /// "AXLandmark". Labels come from whatever descriptive attribute the element
-    /// carries — no panel names are hardcoded.
     private func findLandmarks(
         _ el: AXUIElement,
         into panels: inout [(label: String, text: String)],
         depth: Int
     ) {
         guard depth < 12 else { return }
-
         let subrole = axStr(el, kAXSubroleAttribute) ?? ""
         if subrole.hasPrefix("AXLandmark") {
             let label = axStr(el, kAXDescriptionAttribute)
                      ?? axStr(el, kAXTitleAttribute)
-                     ?? subrole   // fall back to the raw subrole name
-
+                     ?? subrole
             let text = extractLeafText(el)
                 .map    { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                 .filter { $0.count > 2 }
                 .joined(separator: "\n")
-
-            if text.count > 20 {
-                panels.append((label: label, text: text))
-                log.debug("VSCode panel: \"\(label)\" (\(subrole)) — \(text.count) chars")
-            }
-            // Don't recurse further — we want top-level landmarks only.
+            if text.count > 20 { panels.append((label: label, text: text)) }
             return
         }
-
         axChildren(el).forEach { findLandmarks($0, into: &panels, depth: depth + 1) }
     }
 }

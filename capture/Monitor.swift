@@ -94,21 +94,20 @@ final class KosmosMonitor {
         }
         let title = axStr(window, kAXTitleAttribute) ?? ""
 
-        guard let result = strategy.extract(from: window, app: app) else { return }
-
-        let content = result.content
-            .components(separatedBy: .newlines)
-            .map    { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
-            .joined(separator: "\n")
-
-        guard !content.isEmpty else { return }
-        guard !dedup.isDuplicate(bundleID: bundle, content: content) else {
-            log.debug("Duplicate skipped: \(bundle)")
-            return
+        let results = strategy.extractAll(from: window, app: app)
+        for result in results {
+            let content = result.content
+                .components(separatedBy: .newlines)
+                .map    { $0.trimmingCharacters(in: .whitespaces) }
+                .filter { !$0.isEmpty }
+                .joined(separator: "\n")
+            guard !content.isEmpty else { continue }
+            guard !dedup.isDuplicate(bundleID: bundle, content: content) else {
+                log.debug("Duplicate skipped: \(bundle)")
+                continue
+            }
+            emit(app: app, title: title, content: content, url: result.url)
         }
-
-        emit(app: app, title: title, content: content, url: result.url)
     }
 
     private func emit(app: NSRunningApplication, title: String, content: String, url: String?) {

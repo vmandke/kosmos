@@ -21,6 +21,9 @@ protocol AppCaptureStrategy {
     /// Extract text (and optional URL) from the focused window.
     /// Return nil to suppress emit (e.g. empty or unsupported view).
     func extract(from window: AXUIElement, app: NSRunningApplication) -> (content: String, url: String?)?
+    /// Extract multiple documents from the focused window (e.g. one per panel).
+    /// Default wraps extract() into a single-element array.
+    func extractAll(from window: AXUIElement, app: NSRunningApplication) -> [(content: String, url: String?)]
 }
 
 extension AppCaptureStrategy {
@@ -31,6 +34,9 @@ extension AppCaptureStrategy {
     var setupDelay: TimeInterval { 0 }
     func setup(_ axApp: AXUIElement) {
         AXUIElementSetMessagingTimeout(axApp, axTimeout)
+    }
+    func extractAll(from window: AXUIElement, app: NSRunningApplication) -> [(content: String, url: String?)] {
+        extract(from: window, app: app).map { [$0] } ?? []
     }
 }
 
