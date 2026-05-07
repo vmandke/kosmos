@@ -12,46 +12,89 @@
       color: #ddd;
       font-family: 'SF Mono', 'Fira Code', monospace;
       font-size: 13px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
 
+    /* ── Header ── */
     header {
-      position: sticky;
-      top: 0;
-      z-index: 10;
+      flex-shrink: 0;
       background: #0d0d0d;
       border-bottom: 1px solid #222;
-      padding: 10px 16px;
+      padding: 0 16px;
+      height: 40px;
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      gap: 20px;
     }
 
-    header h1 { font-size: 14px; font-weight: 700; color: #fff; letter-spacing: 0.05em; }
-    #status   { font-size: 11px; color: #555; }
+    header h1 { font-size: 13px; font-weight: 700; color: #fff; letter-spacing: 0.05em; white-space: nowrap; }
 
+    .tabs { display: flex; gap: 2px; }
+
+    .tab {
+      background: none;
+      border: none;
+      color: #555;
+      font: inherit;
+      font-size: 12px;
+      cursor: pointer;
+      padding: 4px 10px;
+      border-radius: 4px;
+      transition: color 0.1s;
+    }
+    .tab:hover  { color: #999; }
+    .tab.active { color: #ddd; background: #1e1e1e; }
+
+    #status { font-size: 11px; color: #444; margin-left: auto; white-space: nowrap; }
+
+    /* ── Panels ── */
+    .panel { display: none; flex: 1; min-height: 0; overflow-y: auto; }
+    .panel.active { display: flex; flex-direction: column; }
+
+    /* ── Live feed ── */
     #feed { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
 
+    /* ── Shared card ── */
     .card {
       background: #1a1a1a;
-      border: 1px solid #2a2a2a;
+      border: 1px solid #222;
       border-radius: 6px;
       padding: 10px 12px;
     }
+    .card:hover { border-color: #2e2e2e; }
 
     .meta {
       display: flex;
-      align-items: baseline;
-      gap: 10px;
+      align-items: center;
+      gap: 8px;
       margin-bottom: 6px;
       overflow: hidden;
     }
 
-    .app-name  { color: #7aa2f7; font-weight: 700; font-size: 12px; white-space: nowrap; }
-    .win-title { color: #888; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
-    .ts        { color: #444; font-size: 11px; white-space: nowrap; }
+    .source-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 3px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .badge-chrome  { background: #1c2a3a; color: #7aa2f7; }
+    .badge-safari  { background: #1c2a3a; color: #7aa2f7; }
+    .badge-vscode  { background: #1c2a1c; color: #9ece6a; }
+    .badge-sublime { background: #1c2a1c; color: #9ece6a; }
+    .badge-pycharm { background: #2a1c2a; color: #bb9af7; }
+    .badge-discord { background: #2a261c; color: #e0af68; }
+    .badge-default { background: #1e1e1e; color: #565f89; }
+
+    .win-title { color: #666; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .ts        { color: #3a3a3a; font-size: 11px; white-space: nowrap; }
 
     .body {
-      color: #bbb;
+      color: #999;
       white-space: pre-wrap;
       word-break: break-word;
       line-height: 1.55;
@@ -66,73 +109,558 @@
       margin-top: 5px;
       background: none;
       border: none;
-      color: #555;
+      color: #444;
       font-size: 11px;
       cursor: pointer;
       padding: 0;
     }
-    .toggle:hover { color: #999; }
+    .toggle:hover { color: #888; }
+
+    /* ── Episodes panel ── */
+    .panel-toolbar {
+      flex-shrink: 0;
+      padding: 8px 12px;
+      border-bottom: 1px solid #1a1a1a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .filter-input {
+      flex: 1;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      color: #ccc;
+      font: inherit;
+      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 4px;
+      outline: none;
+    }
+    .filter-input:focus { border-color: #3a3a3a; }
+    .filter-input::placeholder { color: #3a3a3a; }
+
+    .refresh-btn {
+      background: none;
+      border: 1px solid #2a2a2a;
+      color: #555;
+      font: inherit;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .refresh-btn:hover { color: #999; border-color: #444; }
+
+    #episodes-list { padding: 12px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+
+    .episode-card { cursor: default; }
+
+    .episode-header { cursor: pointer; user-select: none; }
+
+    .episode-sources { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; flex-shrink: 0; }
+    .episode-time { font-size: 11px; color: #444; white-space: nowrap; }
+    .episode-chunks { font-size: 11px; color: #333; white-space: nowrap; }
+
+    .ep-expand-btn {
+      background: none;
+      border: none;
+      color: #2a2a2a;
+      font-size: 10px;
+      cursor: pointer;
+      padding: 0 2px;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+    .ep-expand-btn:hover { color: #555; }
+
+    .episode-docs {
+      margin-top: 5px;
+      font-size: 11px;
+      color: #555;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .episode-summary {
+      margin-top: 6px;
+      font-size: 12px;
+      color: #666;
+      line-height: 1.5;
+    }
+
+    /* ── Chunk list (inside episode) ── */
+    .chunk-list {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #1e1e1e;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .chunk-item {
+      cursor: pointer;
+      padding: 6px 8px;
+      border-radius: 4px;
+      background: #141414;
+      border: 1px solid #1c1c1c;
+    }
+    .chunk-item:hover { border-color: #252525; }
+
+    .chunk-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+
+    .chunk-occurrences {
+      font-size: 10px;
+      color: #333;
+      margin-left: auto;
+      white-space: nowrap;
+    }
+    .chunk-occurrences.multi { color: #4a5a3a; }
+
+    .chunk-preview {
+      font-size: 11px;
+      color: #555;
+      line-height: 1.4;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+
+    /* ── Occurrence detail (inside chunk) ── */
+    .occurrence-detail {
+      margin-top: 6px;
+      padding: 6px 8px;
+      background: #0e0e0e;
+      border-radius: 3px;
+      border: 1px solid #1a1a1a;
+    }
+
+    .occurrence-header {
+      font-size: 10px;
+      color: #4a5a3a;
+      font-weight: 700;
+      margin-bottom: 4px;
+      letter-spacing: 0.03em;
+    }
+
+    .occurrence-list { display: flex; flex-direction: column; gap: 2px; }
+    .occurrence-row { display: flex; gap: 10px; font-size: 10px; }
+    .occurrence-time { color: #444; }
+    .occurrence-ep { color: #333; font-family: monospace; }
+
+    .empty-state { padding: 32px 12px; color: #333; font-size: 12px; text-align: center; }
+
+    /* ── Search panel ── */
+    .search-bar-wrap {
+      flex-shrink: 0;
+      padding: 8px 12px;
+      border-bottom: 1px solid #1a1a1a;
+    }
+
+    .search-input {
+      width: 100%;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      color: #ccc;
+      font: inherit;
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 4px;
+      outline: none;
+    }
+    .search-input:focus { border-color: #3a4a5a; }
+    .search-input::placeholder { color: #333; }
+
+    #search-results { padding: 12px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+
+    .result-doc {
+      font-size: 11px;
+      color: #555;
+      margin-top: 2px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .result-body {
+      color: #999;
+      font-size: 12px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin-top: 6px;
+    }
+
+    mark {
+      background: #1e2e1e;
+      color: #9ece6a;
+      border-radius: 2px;
+      padding: 0 1px;
+    }
+
+    .divider { border: none; border-top: 1px solid #1a1a1a; margin: 4px 0; }
   </style>
 </head>
 <body>
   <header>
     <h1>Kosmos</h1>
+    <nav class="tabs">
+      <button class="tab active" data-tab="live">Live</button>
+      <button class="tab" data-tab="episodes">Episodes</button>
+      <button class="tab" data-tab="search">Search</button>
+    </nav>
     <span id="status">waiting…</span>
   </header>
-  <div id="feed"></div>
+
+  <div id="live-panel" class="panel active">
+    <div id="feed"></div>
+  </div>
+
+  <div id="episodes-panel" class="panel">
+    <div class="panel-toolbar">
+      <input class="filter-input" id="ep-filter" type="text" placeholder="filter by source, url, path…" autocomplete="off" />
+      <button class="refresh-btn" id="ep-refresh">↻</button>
+    </div>
+    <div id="episodes-list"></div>
+  </div>
+
+  <div id="search-panel" class="panel">
+    <div class="search-bar-wrap">
+      <input class="search-input" id="search-input" type="search" placeholder="Search your history…" autocomplete="off" />
+    </div>
+    <div id="search-results"></div>
+  </div>
 
   <script type="module">
     import { listen } from '@tauri-apps/api/event'
+    import { invoke } from '@tauri-apps/api/core'
+
+    // ── Utilities ────────────────────────────────────────────────────────────
+
+    function esc(s) {
+      return String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+    }
+
+    function relTime(unixSecs) {
+      if (!unixSecs) return '—'
+      const diff = Math.floor(Date.now() / 1000) - unixSecs
+      if (diff < 60)    return 'just now'
+      if (diff < 3600)  return `${Math.floor(diff / 60)}m ago`
+      if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
+      return new Date(unixSecs * 1000).toLocaleDateString()
+    }
+
+    function fmtTime(unixSecs) {
+      if (!unixSecs) return '—'
+      return new Date(unixSecs * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }
+
+    function sourceBadge(source) {
+      const s = String(source ?? '').toLowerCase()
+      const cls = ['chrome','safari','vscode','sublime','pycharm','discord'].find(k => s.includes(k)) ?? 'default'
+      const label = s.split('.').pop() || s
+      return `<span class="source-badge badge-${cls}">${esc(label)}</span>`
+    }
+
+    function parseArr(json) {
+      try { return Array.isArray(json) ? json : JSON.parse(json ?? '[]') } catch { return [] }
+    }
+
+    function highlight(text, query) {
+      if (!query.trim()) return esc(text)
+      const words = query.trim().split(/\s+/).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+      const re = new RegExp(`(${words.join('|')})`, 'gi')
+      return esc(text).replace(re, '<mark>$1</mark>')
+    }
+
+    // ── Tab switching ─────────────────────────────────────────────────────────
+
+    let episodesLoaded = false
+
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'))
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'))
+        tab.classList.add('active')
+        document.getElementById(`${tab.dataset.tab}-panel`).classList.add('active')
+
+        if (tab.dataset.tab === 'episodes' && !episodesLoaded) loadEpisodes()
+        if (tab.dataset.tab === 'search') document.getElementById('search-input').focus()
+      })
+    })
+
+    // ── Live feed ─────────────────────────────────────────────────────────────
 
     const feed   = document.getElementById('feed')
     const status = document.getElementById('status')
     let count = 0
 
-    function esc(s) {
-      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    }
+    listen('capture', (event) => {
+      const c = event.payload
+      if (!c) return
 
-    await listen('capture', ({ payload: c }) => {
       count++
       status.textContent = `${count} capture${count !== 1 ? 's' : ''}`
 
-      const id = `c${count}`
-      const preview = c.content.slice(0, 400)
-      const hasMore = c.content.length > 400
-      const time = new Date(c.ts).toLocaleTimeString()
+      const id      = `c${count}`
+      const text    = String(c.content ?? '')
+      const preview = text.slice(0, 400)
+      const hasMore = text.length > 400
+      const time    = fmtTime(c.ts)
+      const title   = String(c.title ?? '')
+      const source  = String(c.source ?? '')
 
       const card = document.createElement('div')
       card.className = 'card'
       card.innerHTML = `
         <div class="meta">
-          <span class="app-name">${esc(c.app)}</span>
-          <span class="win-title">${esc(c.title)}</span>
+          ${sourceBadge(source)}
+          <span class="win-title">${esc(title)}</span>
           <span class="ts">${time}</span>
         </div>
         <div class="body" id="${id}">${esc(preview)}${hasMore ? '…' : ''}</div>
-        ${hasMore ? `<button class="toggle" data-id="${id}" data-full="${esc(c.content)}" data-open="0">show more</button>` : ''}
+        ${hasMore ? `<button class="toggle" data-id="${id}" data-open="0">show more</button>` : ''}
       `
-
+      if (hasMore) {
+        card.querySelector('.toggle').addEventListener('click', () => {
+          const el   = document.getElementById(id)
+          const btn  = card.querySelector('.toggle')
+          const open = btn.dataset.open === '1'
+          if (open) {
+            el.textContent   = preview + '…'
+            el.classList.remove('open')
+            btn.textContent  = 'show more'
+            btn.dataset.open = '0'
+          } else {
+            el.textContent   = text
+            el.classList.add('open')
+            btn.textContent  = 'show less'
+            btn.dataset.open = '1'
+          }
+        })
+      }
       feed.prepend(card)
+    }).catch(e => {
+      status.textContent = `live feed error: ${e}`
     })
 
-    document.addEventListener('click', e => {
-      const btn = e.target.closest('.toggle')
-      if (!btn) return
-      const el   = document.getElementById(btn.dataset.id)
-      const open = btn.dataset.open === '1'
-      if (open) {
-        el.textContent = btn.dataset.full.slice(0, 400) + '…'
-        el.classList.remove('open')
-        btn.textContent  = 'show more'
-        btn.dataset.open = '0'
-      } else {
-        el.textContent   = btn.dataset.full
-        el.classList.add('open')
-        btn.textContent  = 'show less'
-        btn.dataset.open = '1'
+    // ── Episodes ──────────────────────────────────────────────────────────────
+
+    function createEpisodeCard(ep) {
+      const sources = parseArr(ep.sources)
+      const docs    = parseArr(ep.doc_identities)
+      const start   = fmtTime(ep.start_ts)
+      const end     = ep.end_ts ? fmtTime(ep.end_ts) : '…'
+      const age     = relTime(ep.start_ts)
+      const nChunks = ep.chunk_count
+
+      const docLinks = docs.slice(0, 3).map(d => {
+        const label = d.length > 60 ? d.slice(0, 57) + '…' : d
+        return `<span title="${esc(d)}">${esc(label)}</span>`
+      }).join('  ·  ')
+
+      const card = document.createElement('div')
+      card.className = 'card episode-card'
+      card.dataset.episodeId  = ep.id
+      card.dataset.epSources  = ep.sources  ?? ''
+      card.dataset.epDocs     = ep.doc_identities ?? ''
+      card.innerHTML = `
+        <div class="episode-header">
+          <div class="meta">
+            <div class="episode-sources">${sources.map(sourceBadge).join('')}</div>
+            <span class="episode-time">${age} · ${start}–${end}</span>
+            <span class="episode-chunks">${nChunks} chunk${nChunks !== 1 ? 's' : ''}</span>
+            <button class="ep-expand-btn" title="Show chunks">▶</button>
+          </div>
+          ${docs.length ? `<div class="episode-docs">${docLinks}</div>` : ''}
+          ${ep.summary ? `<div class="episode-summary">${esc(ep.summary)}</div>` : ''}
+        </div>
+      `
+      return card
+    }
+
+    function filterEpisodes(q) {
+      const list = document.getElementById('episodes-list')
+      q = (q ?? '').toLowerCase().trim()
+      let visible = 0
+      list.querySelectorAll('.episode-card').forEach(card => {
+        const match = !q
+          || card.dataset.epSources.toLowerCase().includes(q)
+          || card.dataset.epDocs.toLowerCase().includes(q)
+        card.hidden = !match
+        if (match) visible++
+      })
+      let empty = list.querySelector('.empty-state')
+      if (visible === 0) {
+        if (!empty) { empty = document.createElement('div'); empty.className = 'empty-state'; list.appendChild(empty) }
+        empty.textContent = q ? 'no matching episodes' : 'no episodes yet'
+        empty.hidden = false
+      } else if (empty) {
+        empty.hidden = true
+      }
+    }
+
+    async function loadEpisodes() {
+      const list = document.getElementById('episodes-list')
+      list.innerHTML = '<div class="empty-state">loading…</div>'
+      try {
+        const episodes = await invoke('get_recent_episodes', { limit: 100 })
+        episodesLoaded = true
+        list.innerHTML = ''
+        for (const ep of episodes) list.appendChild(createEpisodeCard(ep))
+        filterEpisodes(document.getElementById('ep-filter').value)
+      } catch (e) {
+        list.innerHTML = `<div class="empty-state">error: ${esc(String(e))}</div>`
+      }
+    }
+
+    document.getElementById('ep-filter').addEventListener('input', e => filterEpisodes(e.target.value))
+    document.getElementById('ep-refresh').addEventListener('click', () => { episodesLoaded = false; loadEpisodes() })
+
+    // Episode click → chunks, chunk click → occurrences (event delegation)
+    document.getElementById('episodes-list').addEventListener('click', async (e) => {
+      const chunkItem = e.target.closest('.chunk-item')
+      const epCard    = e.target.closest('.episode-card')
+
+      if (chunkItem) {
+        e.stopPropagation()
+        const chunkId = chunkItem.dataset.chunkId
+        const existing = chunkItem.querySelector('.occurrence-detail')
+        if (existing) { existing.remove(); return }
+
+        try {
+          const occs = await invoke('get_chunk_occurrences', { chunk_id: chunkId })
+          const detail = document.createElement('div')
+          detail.className = 'occurrence-detail'
+          detail.innerHTML = `
+            <div class="occurrence-header">seen ${occs.length} time${occs.length !== 1 ? 's' : ''}</div>
+            <div class="occurrence-list">
+              ${occs.map(o => `
+                <div class="occurrence-row">
+                  <span class="occurrence-time">${relTime(o.ts)}</span>
+                  <span class="occurrence-ep">${esc(o.episode_id.slice(0, 10))}…</span>
+                </div>
+              `).join('')}
+            </div>
+          `
+          chunkItem.appendChild(detail)
+        } catch (err) {
+          console.error('get_chunk_occurrences:', err)
+        }
+        return
+      }
+
+      if (epCard) {
+        const epId     = epCard.dataset.episodeId
+        const btn      = epCard.querySelector('.ep-expand-btn')
+        const existing = epCard.querySelector('.chunk-list')
+
+        if (existing) {
+          existing.remove()
+          if (btn) btn.textContent = '▶'
+          return
+        }
+
+        if (btn) btn.textContent = '…'
+        try {
+          const chunks = await invoke('get_episode_chunks', { episode_id: epId })
+          const list   = document.createElement('div')
+          list.className = 'chunk-list'
+          if (chunks.length === 0) {
+            list.innerHTML = '<div class="empty-state" style="padding:8px;font-size:11px">no chunks</div>'
+          } else {
+            list.innerHTML = chunks.map(chunk => {
+              const preview = chunk.content.length > 200 ? chunk.content.slice(0, 197) + '…' : chunk.content
+              const multi   = chunk.occurrences > 1
+              return `
+                <div class="chunk-item" data-chunk-id="${esc(chunk.id)}">
+                  <div class="chunk-meta">
+                    ${sourceBadge(chunk.source)}
+                    <span class="ts">${relTime(chunk.ts)}</span>
+                    <span class="chunk-occurrences${multi ? ' multi' : ''}">${chunk.occurrences}×</span>
+                  </div>
+                  <div class="chunk-preview">${esc(preview)}</div>
+                </div>
+              `
+            }).join('')
+          }
+          epCard.appendChild(list)
+          if (btn) btn.textContent = '▼'
+        } catch (err) {
+          if (btn) btn.textContent = '!'
+          console.error('get_episode_chunks:', err)
+        }
       }
     })
+
+    // ── Search ────────────────────────────────────────────────────────────────
+
+    const searchInput   = document.getElementById('search-input')
+    const searchResults = document.getElementById('search-results')
+    let searchTimer = null
+
+    searchInput.addEventListener('input', () => {
+      clearTimeout(searchTimer)
+      const q = searchInput.value.trim()
+      if (!q) { searchResults.innerHTML = ''; return }
+      searchTimer = setTimeout(() => runSearch(q), 350)
+    })
+
+    searchInput.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { searchInput.value = ''; searchResults.innerHTML = '' }
+    })
+
+    async function runSearch(query) {
+      searchResults.innerHTML = '<div class="empty-state">searching…</div>'
+      try {
+        const results = await invoke('search_chunks', { query })
+
+        if (!results.length) {
+          searchResults.innerHTML = '<div class="empty-state">no results</div>'
+          return
+        }
+
+        const byEpisode = new Map()
+        for (const r of results) {
+          if (!byEpisode.has(r.episode_id)) byEpisode.set(r.episode_id, [])
+          byEpisode.get(r.episode_id).push(r)
+        }
+
+        let html = ''
+        for (const [, chunks] of byEpisode) {
+          const first    = chunks[0]
+          const epSources = parseArr(first.ep_sources)
+          const epTime   = fmtTime(first.episode_start)
+
+          html += `<div class="card">`
+          html += `<div class="meta">${epSources.map(sourceBadge).join('')}<span class="ts" style="margin-left:4px">${epTime}</span></div>`
+
+          for (const [i, chunk] of chunks.entries()) {
+            if (chunk.doc_identity) {
+              const doc = chunk.doc_identity.length > 80 ? chunk.doc_identity.slice(0, 77) + '…' : chunk.doc_identity
+              html += `<div class="result-doc">${esc(doc)}</div>`
+            }
+            const snippet = chunk.content.length > 500 ? chunk.content.slice(0, 497) + '…' : chunk.content
+            html += `<div class="result-body">${highlight(snippet, query)}</div>`
+            if (i < chunks.length - 1) html += `<hr class="divider" />`
+          }
+
+          html += `</div>`
+        }
+
+        searchResults.innerHTML = html
+      } catch (e) {
+        searchResults.innerHTML = `<div class="empty-state">error: ${esc(String(e))}</div>`
+      }
+    }
   </script>
 </body>
 </html>

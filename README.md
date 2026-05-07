@@ -1,6 +1,6 @@
 # Kosmos
 
-A local-first memory system for macOS. Captures what you read and work on across your apps — browser, editor, chat — using the Accessibility API, and makes it searchable. No screenshots. No cloud. Everything stays on your machine.
+A local-first memory system for macOS. Reads text from your apps via the Accessibility API and makes it searchable. No screenshots. No cloud. Stays on your machine.
 
 Built as a reaction to tools that solve the right problem but make the wrong privacy tradeoff.
 
@@ -8,50 +8,75 @@ Built as a reaction to tools that solve the right problem but make the wrong pri
 
 ## Architecture
 
-### Swift Capture Daemon — `capture/`
+### Swift capture daemon — `capture/`
 
 Reads text from each app's UI tree via the macOS Accessibility API. No pixels, no OCR.
 
-- Per-app traversal strategies — each app has its own AX extraction logic
-- Triggers on focus change, window change, and title change (tab / file switch)
+- Per-app extraction strategies: each app has its own AX traversal logic
+- Triggers on focus change, window change, and title change (tab/file switch)
 - 5s fallback poll for Electron apps that don't fire AX events reliably
-- Sliding-window dedup — drops unchanged content before it hits the socket
-- TCC revocation detection — exits cleanly if Accessibility permission is silently removed
+- Sliding-window dedup before anything hits the socket
+- TCC revocation detection: exits cleanly if Accessibility permission is removed
 
-### Rust / Tauri Backend — `app/`
+### Rust/Tauri backend — `app/src-tauri/`
 
-Receives captures over a Unix domain socket and owns all storage and retrieval.
+Receives captures over a Unix domain socket. Owns all storage and retrieval.
 
-- Spawns the Swift daemon as a sidecar on launch
-- `[planned]` SQLite with WAL mode and SHA-256 dedup on insert
-- `[planned]` FTS5 full-text search
-- `[planned]` Chunking (~512 tokens) + embeddings via ONNX (all-MiniLM-L6-v2)
-- `[planned]` Hybrid BM25 / cosine ranking
+- SQLite with WAL mode and FTS5 full-text search (porter stemmer)
+- SHA-256 content fingerprinting: same content seen twice writes one chunk row and one occurrence row, not two chunks
+- Per-source tokenizer: URL host/path/query for browsers, file path segments for editors, window title fallback for everything else
+- Per-source chunker: paragraph splits for browsers, blank-line splits for editors, fixed-size fallback
+- Episode builder: clusters captures dynamically using temporal + token-overlap + source-continuity affinity scoring. Multiple episodes can be active at once.
+- Background worker queue: pluggable workers over a tokio channel. Summarizer V0 concatenates first few chunks; V1 will call a model.
 
-### Frontend — `app/src/`
+### Frontend — `app/index.html`
 
-- Live capture feed
-- `[planned]` History view and search UI
+- **Live**: streaming feed of captures as they arrive
+- **Episodes**: filterable list of sessions, expandable to chunks, each chunk shows occurrence history
+- **Search**: FTS5 full-text search with keyword highlighting and recency decay ranking
+
+---
+
+## Supported apps
+
+| App | Capture strategy |
+|-----|-----------------|
+| Chrome | URL + page text |
+| VS Code | File path + editor content |
+| Sublime Text | File path + editor content |
+| PyCharm | File path + editor content |
+| Discord | Channel + message text |
 
 ---
 
 ## Status
 
-Early. The capture pipeline works end to end — Swift reads text, Rust receives it, the frontend displays it live. Storage and search are next. This might change anytime as I read more and get more familiar with the space.
+Still Early. Captures flow from the AX daemon through Rust into SQLite, episodes cluster up over a session, and search works. The background worker stub is wired in but the summarizer is V0 (no model call yet).
 
-**Up next**
+What's still missing:
+- Embeddings + semantic search (local ONNX, was planning all-MiniLM-L6-v2)
+- Episode summaries via LLM (worker is there, model call isn't)
+- Broader app support: Safari, Slack, Terminal, Notes
 
-- SQLite persistence in Rust — store every capture, deduplicate on SHA-256
-- Full-text search — FTS5 over captured content
-- Broader app support — Safari, Slack, Terminal, Notes
-- Noise filtering — strip nav chrome, button labels, and aria text before storing
-- Semantic search — local embeddings with hybrid keyword + vector ranking
+This might change as I read more and get more familiar with the space.
 
 ---
 
-## See also
+## Running
 
-- [Rewind](https://www.rewind.ai) — screen recording + cloud search, the main prior art
-- [Screenpipe](https://github.com/mediar-ai/screenpipe) — open-source screen capture pipeline
-- [Mem0](https://github.com/mem0ai/mem0) — memory layer for AI agents
-- [Apple Accessibility API](https://developer.apple.com/documentation/accessibility)
+```sh
+make dev       # build Swift capture + start Tauri in dev mode
+make build     # production build
+make capture   # run the capture daemon standalone (foreground)
+make log       # stream os.log from the daemon (open a second terminal)
+```
+
+---
+
+## Bugs
+
+- **Episodes is still In-progress**: And it needs thorough testing.
+- **Espisodes Dont list individual chunks on clicking**
+- **Chunking is not clean**: And it needs thorough testing.
+- **Search is very basic**
+- **Episode formations needs to be more sophisticated**
